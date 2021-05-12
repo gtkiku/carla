@@ -20,6 +20,9 @@ install(FILES ${libcarla_carla_headers} DESTINATION include/carla)
 file(GLOB libcarla_carla_geom_headers "${libcarla_source_path}/carla/geom/*.h")
 install(FILES ${libcarla_carla_geom_headers} DESTINATION include/carla/geom)
 
+file(GLOB libcarla_carla_opencl_headers "${libcarla_source_path}/carla/OpenCL/*.h")
+install(FILES ${libcarla_carla_opencl_headers} DESTINATION include/carla/OpenCL)
+
 file(GLOB libcarla_carla_opendrive "${libcarla_source_path}/carla/opendrive/*.h")
 install(FILES ${libcarla_carla_opendrive} DESTINATION include/carla/opendrive)
 
@@ -86,6 +89,8 @@ file(GLOB libcarla_server_sources
     "${libcarla_source_path}/carla/Exception.cpp"
     "${libcarla_source_path}/carla/geom/*.cpp"
     "${libcarla_source_path}/carla/geom/*.h"
+    "${libcarla_source_path}/carla/OpenCL/*.cpp"
+    "${libcarla_source_path}/carla/OpenCL/*.h"
     "${libcarla_source_path}/carla/opendrive/*.cpp"
     "${libcarla_source_path}/carla/opendrive/*.h"
     "${libcarla_source_path}/carla/opendrive/parser/*.cpp"
@@ -116,7 +121,11 @@ file(GLOB libcarla_server_sources
     "${libcarla_source_thirdparty_path}/moodycamel/*.cpp"
     "${libcarla_source_thirdparty_path}/moodycamel/*.h"
     "${libcarla_source_thirdparty_path}/pugixml/*.cpp"
-    "${libcarla_source_thirdparty_path}/pugixml/*.hpp")
+    "${libcarla_source_thirdparty_path}/pugixml/*.hpp"
+    "${libcarla_source_thirdparty_path}/CL/*.cpp"
+    "${libcarla_source_thirdparty_path}/CL/*.hpp"
+    "${libcarla_source_thirdparty_path}/CL/*.h"
+)
 
 # ==============================================================================
 # Create targets for debug and release in the same build type.
@@ -134,6 +143,9 @@ if (LIBCARLA_BUILD_RELEASE)
 
   set_target_properties(carla_server PROPERTIES COMPILE_FLAGS "${CMAKE_CXX_FLAGS_RELEASE}")
 
+  find_library(LIBOPENCL OpenCL REQUIRED)
+  target_link_libraries(carla_server ${LIBOPENCL})
+
 endif()
 
 if (LIBCARLA_BUILD_DEBUG)
@@ -148,5 +160,8 @@ if (LIBCARLA_BUILD_DEBUG)
 
   set_target_properties(carla_server_debug PROPERTIES COMPILE_FLAGS "${CMAKE_CXX_FLAGS_DEBUG}")
   target_compile_definitions(carla_server_debug PUBLIC -DBOOST_ASIO_ENABLE_BUFFER_DEBUGGING)
+
+  find_library(LIBOPENCL OpenCL REQUIRED)
+  target_link_libraries(carla_server_debug ${LIBOPENCL})
 
 endif()
