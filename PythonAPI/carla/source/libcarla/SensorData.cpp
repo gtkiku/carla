@@ -20,7 +20,7 @@
 #include <carla/sensor/data/GnssMeasurement.h>
 #include <carla/sensor/data/RadarMeasurement.h>
 #include <carla/sensor/data/DVSEventArray.h>
-
+#include <carla/sensor/data/PixelCountEvent.h>
 #include <carla/sensor/data/RadarData.h>
 
 #include <boost/python/suite/indexing/vector_indexing_suite.hpp>
@@ -97,6 +97,14 @@ namespace data {
         << ", lat=" << std::to_string(meas.GetLatitude())
         << ", lon=" << std::to_string(meas.GetLongitude())
         << ", alt=" << std::to_string(meas.GetAltitude())
+        << ')';
+    return out;
+  }
+
+  std::ostream &operator<<(std::ostream &out, const PixelCountEvent &event) {
+    out << "PixelCountEvent(frame=" << std::to_string(event.GetFrame())
+        << ", timestamp=" << std::to_string(event.GetTimestamp())
+        << ", pixel_count=" << std::to_string(event.GetPixelCount())
         << ')';
     return out;
   }
@@ -498,6 +506,11 @@ void export_sensor_data() {
     .add_property("latitude", &csd::GnssMeasurement::GetLatitude)
     .add_property("longitude", &csd::GnssMeasurement::GetLongitude)
     .add_property("altitude", &csd::GnssMeasurement::GetAltitude)
+    .def(self_ns::str(self_ns::self))
+  ;
+
+  class_<csd::PixelCountEvent, bases<cs::SensorData>, boost::noncopyable, boost::shared_ptr<csd::PixelCountEvent>>("PixelCountEvent", no_init)
+    .add_property("pixel_count", &csd::PixelCountEvent::GetPixelCount)
     .def(self_ns::str(self_ns::self))
   ;
 
