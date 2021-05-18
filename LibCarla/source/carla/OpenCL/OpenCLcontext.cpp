@@ -122,14 +122,14 @@ bool OpenCL_Context::initialize(unsigned platID, unsigned devID, unsigned width,
     platform = all_platforms[platID];
     Offset = cl::NullRange;
 
-    unsigned local_w = (height % 2) ? 1 : 2;
-    local_w = (height % 4) ? local_w : 4;
-    local_w = (height % 8) ? local_w : 8;
-    local_w = (height % 16) ? local_w : 16;
-    unsigned local_h = (width % 2) ? 1 : 2;
-    local_h = (width % 4) ? local_h : 4;
-    local_h = (width % 8) ? local_h : 8;
-    local_h = (width % 16) ? local_h : 16;
+    unsigned local_h = (height % 2) ? 1 : 2;
+    local_h = (height % 4) ? local_h : 4;
+    local_h = (height % 8) ? local_h : 8;
+    local_h = (height % 16) ? local_h : 16;
+    unsigned local_w = (width % 2) ? 1 : 2;
+    local_w = (width % 4) ? local_w : 4;
+    local_w = (width % 8) ? local_w : 8;
+    local_w = (width % 16) ? local_w : 16;
 
     Local = cl::NDRange(local_w, local_h);
     Global = cl::NDRange(width, height);
