@@ -287,6 +287,7 @@ if (LIBCARLA_BUILD_RELEASE)
     target_link_libraries(carla_client${carla_target_postfix} "${RECAST_LIB_PATH}/libRecast.a")
     target_link_libraries(carla_client${carla_target_postfix} "${RECAST_LIB_PATH}/libDetour.a")
     target_link_libraries(carla_client${carla_target_postfix} "${RECAST_LIB_PATH}/libDetourCrowd.a")
+    target_link_libraries(carla_client${carla_target_postfix} "${POCL_LIB_PATH}/libOpenCL.a")
 
   endif (WIN32)
 
@@ -327,6 +328,7 @@ if (LIBCARLA_BUILD_DEBUG)
     target_link_libraries(carla_client${carla_target_postfix}_debug "${RECAST_LIB_PATH}/libRecast.a")
     target_link_libraries(carla_client${carla_target_postfix}_debug "${RECAST_LIB_PATH}/libDetour.a")
     target_link_libraries(carla_client${carla_target_postfix}_debug "${RECAST_LIB_PATH}/libDetourCrowd.a")
+    target_link_libraries(carla_client${carla_target_postfix}_debug "${POCL_LIB_PATH}/libOpenCL.a")
 
   endif (WIN32)
 
