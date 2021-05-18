@@ -276,6 +276,73 @@ fi
 unset GTEST_BASENAME
 
 # ==============================================================================
+# -- Get PoCL and compile it with libc++ --------------------------------------
+# ==============================================================================
+
+POCL_VERSION=trunk
+POCL_BASENAME=pocl-${POCL_VERSION}-${CXX_TAG}
+
+POCL_LIBCXX_INCLUDE=${PWD}/${POCL_BASENAME}-libcxx-install/include
+POCL_LIBCXX_LIBPATH=${PWD}/${POCL_BASENAME}-libcxx-install/lib/static
+POCL_LIBSTDCXX_INCLUDE=${PWD}/${POCL_BASENAME}-libstdcxx-install/include
+POCL_LIBSTDCXX_LIBPATH=${PWD}/${POCL_BASENAME}-libstdcxx-install/lib/static
+
+if [[ -d "${POCL_BASENAME}-libcxx-install" && -d "${POCL_BASENAME}-libstdcxx-install" ]] ; then
+  log "${POCL_BASENAME} already installed."
+else
+  rm -Rf \
+      ${POCL_BASENAME}-source \
+      ${POCL_BASENAME}-libcxx-build ${POCL_BASENAME}-libstdcxx-build \
+      ${POCL_BASENAME}-libcxx-install ${POCL_BASENAME}-libstdcxx-install
+
+  log "Retrieving POCL."
+
+  git clone --depth=1  https://github.com/pocl/pocl.git ${POCL_BASENAME}-source
+
+  log "Building POCL with libc++."
+
+  mkdir -p ${POCL_BASENAME}-libcxx-build
+
+  pushd ${POCL_BASENAME}-libcxx-build >/dev/null
+
+#      -DENABLE_BUF_COMP=1
+  cmake -G "Ninja" \
+      -DENABLE_HOST_CPU_DEVICES=0 -DENABLE_LLVM=0 -DENABLE_ICD=0 -DENABLE_REMOTE_CLIENT=1 -DBUILD_SHARED_LIBS=0 -DENABLE_TESTS=0 -DENABLE_EXAMPLES=0 \
+      -DCMAKE_BUILD_TYPE=Debug -DCMAKE_C_FLAGS_DEBUG="-O0 -ggdb3" -DCMAKE_CXX_FLAGS_DEBUG="-O0 -ggdb3 -stdlib=libc++ -Wl,-L${LLVM_LIBPATH} -fno-exceptions" \
+      -DCMAKE_INSTALL_PREFIX="../${POCL_BASENAME}-libcxx-install" \
+      ../${POCL_BASENAME}-source
+
+  ninja
+
+  ninja install
+
+  popd >/dev/null
+
+  log "Building POCL with libstdc++."
+
+  mkdir -p ${POCL_BASENAME}-libstdcxx-build
+
+  pushd ${POCL_BASENAME}-libstdcxx-build >/dev/null
+
+  cmake -G "Ninja" \
+      -DENABLE_HOST_CPU_DEVICES=0 -DENABLE_LLVM=0 -DENABLE_ICD=0 -DENABLE_REMOTE_CLIENT=1 -DBUILD_SHARED_LIBS=0 -DENABLE_TESTS=0 -DENABLE_EXAMPLES=0 \
+      -DCMAKE_BUILD_TYPE=Debug -DCMAKE_C_FLAGS_DEBUG="-O0 -ggdb3" -DCMAKE_CXX_FLAGS_DEBUG="-O0 -ggdb3" \
+      -DCMAKE_INSTALL_PREFIX="../${POCL_BASENAME}-libstdcxx-install" \
+      ../${POCL_BASENAME}-source
+
+  ninja
+
+  ninja install
+
+  popd >/dev/null
+
+  rm -Rf ${POCL_BASENAME}-source ${POCL_BASENAME}-libcxx-build ${POCL_BASENAME}-libstdcxx-build
+
+fi
+
+unset GTEST_BASENAME
+
+# ==============================================================================
 # -- Get Recast&Detour and compile it with libc++ ------------------------------
 # ==============================================================================
 
@@ -960,6 +1027,8 @@ if (CMAKE_BUILD_TYPE STREQUAL "Server")
   set(RPCLIB_LIB_PATH "${RPCLIB_LIBCXX_LIBPATH}")
   set(GTEST_INCLUDE_PATH "${GTEST_LIBCXX_INCLUDE}")
   set(GTEST_LIB_PATH "${GTEST_LIBCXX_LIBPATH}")
+  set(POCL_INCLUDE_PATH "${POCL_LIBCXX_INCLUDE}")
+  set(POCL_LIB_PATH "${POCL_LIBCXX_LIBPATH}")
 elseif (CMAKE_BUILD_TYPE STREQUAL "ros2")
   list(APPEND CMAKE_PREFIX_PATH "${FASTDDS_INSTALL_DIR}")
 elseif (CMAKE_BUILD_TYPE STREQUAL "Pytorch")
@@ -973,6 +1042,8 @@ elseif (CMAKE_BUILD_TYPE STREQUAL "Client")
   set(RPCLIB_LIB_PATH "${RPCLIB_LIBSTDCXX_LIBPATH}")
   set(GTEST_INCLUDE_PATH "${GTEST_LIBSTDCXX_INCLUDE}")
   set(GTEST_LIB_PATH "${GTEST_LIBSTDCXX_LIBPATH}")
+  set(POCL_INCLUDE_PATH "${POCL_LIBSTDCXX_INCLUDE}")
+  set(POCL_LIB_PATH "${POCL_LIBSTDCXX_LIBPATH}")
   set(BOOST_LIB_PATH "${BOOST_LIBPATH}")
   set(RECAST_INCLUDE_PATH "${RECAST_INCLUDE}")
   set(RECAST_LIB_PATH "${RECAST_LIBPATH}")

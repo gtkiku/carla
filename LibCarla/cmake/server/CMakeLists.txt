@@ -10,6 +10,10 @@ install(DIRECTORY "${RPCLIB_INCLUDE_PATH}/rpc" DESTINATION include)
 file(GLOB libcarla_carla_rpclib "${RPCLIB_LIB_PATH}/*.*")
 install(FILES ${libcarla_carla_rpclib} DESTINATION lib)
 
+# Install PoCL.
+file(GLOB libcarla_carla_pocl "${POCL_LIB_PATH}/*.*")
+install(FILES ${libcarla_carla_pocl} DESTINATION lib)
+
 # Install headers.
 
 install(DIRECTORY "${libcarla_source_path}/compiler" DESTINATION include)
@@ -152,9 +156,6 @@ if (LIBCARLA_BUILD_RELEASE)
 
   set_target_properties(carla_server PROPERTIES COMPILE_FLAGS "${CMAKE_CXX_FLAGS_RELEASE}")
 
-  find_library(LIBOPENCL OpenCL REQUIRED)
-  target_link_libraries(carla_server ${LIBOPENCL})
-
 endif()
 
 if (LIBCARLA_BUILD_DEBUG)
@@ -169,8 +170,5 @@ if (LIBCARLA_BUILD_DEBUG)
 
   set_target_properties(carla_server_debug PROPERTIES COMPILE_FLAGS "${CMAKE_CXX_FLAGS_DEBUG}")
   target_compile_definitions(carla_server_debug PUBLIC -DBOOST_ASIO_ENABLE_BUFFER_DEBUGGING)
-
-  find_library(LIBOPENCL OpenCL REQUIRED)
-  target_link_libraries(carla_server_debug ${LIBOPENCL})
 
 endif()
