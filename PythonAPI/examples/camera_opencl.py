@@ -22,9 +22,28 @@ import carla
 import random
 import time
 
+vehicle = False
+vehicle_stopped = False
+all_spawned = False
+
+def camera_cb(pxl_event):
+    global vehicle
+    global vehicle_stopped
+    global all_spawned
+    if vehicle_stopped:
+        return
+    print("Pixel count is: ", pxl_event.pixel_count)
+    if (all_spawned and pxl_event.pixel_count > 40000):
+        print("Stopping vehicle")
+        vehicle_stopped = True
+        vehicle.set_autopilot(False)
+        vehicle.set_target_velocity(carla.Vector3D(0, 0, 0))
 
 def main():
     actor_list = []
+    global vehicle
+    global vehicle_stopped
+    global all_spawned
 
     # In this tutorial script, we are going to add a vehicle to the simulation
     # and let it drive in autopilot. We will also create a camera attached to
@@ -86,7 +105,7 @@ def main():
         # receives an image. In this example we are saving the image to disk
         # converting the pixels to gray-scale.
         cc = carla.ColorConverter.LogarithmicDepth
-        camera.listen(lambda pxl_event: print("Pixel count is: ", pxl_event.pixel_count) )
+        camera.listen(camera_cb)
 
         # Oh wait, I don't like the location we gave to the vehicle, I'm going
         # to move it a bit forward.
@@ -112,7 +131,11 @@ def main():
                 npc.set_autopilot(True)
                 print('created %s' % npc.type_id)
 
-        time.sleep(5)
+        all_spawned = True
+        print("sleeping")
+        time.sleep(60)
+        print("DONE sleeping")
+
 
     finally:
 
