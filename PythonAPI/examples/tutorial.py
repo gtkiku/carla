@@ -86,7 +86,7 @@ def main():
         # Now we register the function that will be called each time the sensor
         # receives an image. In this example we are saving the image to disk
         # converting the pixels to gray-scale.
-        cc = carla.ColorConverter.LogarithmicDepth
+        cc = carla.ColorConverter.Raw
         camera.listen(lambda image: image.save_to_disk('_out/%06d.png' % image.frame, cc))
 
         # Oh wait, I don't like the location we gave to the vehicle, I'm going

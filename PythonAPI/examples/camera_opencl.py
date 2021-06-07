@@ -26,13 +26,13 @@ vehicle = False
 vehicle_stopped = False
 all_spawned = False
 
-def camera_cb(pxl_event):
+def camera_callback(pxl_event):
     global vehicle
     global vehicle_stopped
     global all_spawned
     if vehicle_stopped:
         return
-    print("Pixel count is: ", pxl_event.pixel_count)
+    print("Red pixel count is: ", pxl_event.pixel_count)
     if (all_spawned and pxl_event.pixel_count > 40000):
         print("Stopping vehicle")
         vehicle_stopped = True
@@ -77,7 +77,8 @@ def main():
 
         # Now we need to give an initial transform to the vehicle. We choose a
         # random transform from the list of recommended spawn points of the map.
-        transform = random.choice(world.get_map().get_spawn_points())
+        indx = 162
+        transform = world.get_map().get_spawn_points()[indx]
 
         # So let's tell the world to spawn the vehicle.
         vehicle = world.spawn_actor(bp, transform)
@@ -102,10 +103,10 @@ def main():
         print('created %s' % camera.type_id)
 
         # Now we register the function that will be called each time the sensor
-        # receives an image. In this example we are saving the image to disk
-        # converting the pixels to gray-scale.
+        # receives the red pixel count. If the pixel count is higher than a
+        # threshold, we stop the vehicle.
         cc = carla.ColorConverter.LogarithmicDepth
-        camera.listen(camera_cb)
+        camera.listen(camera_callback)
 
         # Oh wait, I don't like the location we gave to the vehicle, I'm going
         # to move it a bit forward.
@@ -131,10 +132,11 @@ def main():
                 npc.set_autopilot(True)
                 print('created %s' % npc.type_id)
 
+        # don't enable the camera callback until all actors are spawned
         all_spawned = True
-        print("sleeping")
+        print("running simulation")
         time.sleep(60)
-        print("DONE sleeping")
+        print("finished simulation")
 
 
     finally:

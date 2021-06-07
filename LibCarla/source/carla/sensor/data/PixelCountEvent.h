@@ -15,7 +15,6 @@ namespace carla {
 namespace sensor {
 namespace data {
 
-  /// A registered detection.
   class PixelCountEvent : public SensorData  {
     using Super = SensorData;
   protected:

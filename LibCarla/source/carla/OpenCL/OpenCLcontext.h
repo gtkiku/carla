@@ -16,7 +16,6 @@ public:
     OpenCL_Manager();
     ~OpenCL_Manager();
 
-    // bpp = bits / pixel
     bool initialize(unsigned width, unsigned height, unsigned bpp = 32, unsigned platID = 0, unsigned devID = 0);
     bool processCameraFrame(unsigned char* input, unsigned long *output);
 

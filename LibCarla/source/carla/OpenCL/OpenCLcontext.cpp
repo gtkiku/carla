@@ -31,13 +31,20 @@ __kernel void process_frame(global uchar4 *input, global ulong* output) {
     size_t width = get_global_size(0);
     size_t height = get_global_size(1);
 
-    uchar4 pixel = input[y * width + x];
-    if (pixel.x > 50)
+    uchar4 px = input[y * width + x];
+    if (px.x > 100)
         atom_add(output, 1);
 }
-
 )";
 
+#define OUTPUT_SIZE (cl::size_type)(sizeof(unsigned long)*64)
+
+#define LOG_I(...)
+#define LOG_D(...)
+#define LOG_E(...)
+
+#define CHECK_CL_ERROR(EXPR, ...) \
+    if (EXPR != CL_SUCCESS) { LOG_E(__VA_ARGS__); return false; }
 
 class OpenCL_Context {
     cl::Platform platform;
@@ -55,6 +62,7 @@ class OpenCL_Context {
     std::mutex OclMutex;
     cl::NDRange Offset, Global, Local;
     bool initialized = false;
+    unsigned imgID = 0;
 
 public:
     OpenCL_Context() {};
@@ -84,7 +92,7 @@ bool OpenCL_Manager::initialize(unsigned width, unsigned height, unsigned bpp, u
     if (Context->initialize(platID, devID, width, height, bpp))
         isValid = true;
     else {
-        //LOG_E("Exception @ OpenCL->initialize: %s\n", e.what());
+        LOG_E("Error in OpenCL->initialize\n");
         isValid = false;
     }
     return isValid;
@@ -95,7 +103,7 @@ bool OpenCL_Manager::processCameraFrame(unsigned char* input, unsigned long *out
     std::unique_lock<std::mutex> lock(OclMutex);
     if (isValid) {
         if (!Context->processCameraFrame(input, output)) {
-//            LOG_E("OCL Exception @ request_next_frame_group: %s\n", e.what());
+            LOG_E("Error in OpenCL->processCameraFrame\n");
             isValid = false;
         }
     }
@@ -115,7 +123,7 @@ bool OpenCL_Context::initialize(unsigned platID, unsigned devID, unsigned width,
     std::vector<cl::Platform> all_platforms;
     cl::Platform::get(&all_platforms);
     if(!all_platforms.size()) {
-        //LOG_E("No OpenCL platforms available!");
+        LOG_E("No OpenCL platforms available!\n");
         return false;
     }
 
@@ -134,63 +142,53 @@ bool OpenCL_Context::initialize(unsigned platID, unsigned devID, unsigned width,
     Local = cl::NDRange(local_w, local_h);
     Global = cl::NDRange(width, height);
 
-//    LOG_I("OpenCL platform name: %s\n",
-//        platform.getInfo<CL_PLATFORM_NAME>().c_str());
-//    LOG_I("OpenCL platform version: %s\n",
-//        platform.getInfo<CL_PLATFORM_VERSION>().c_str());
-//    LOG_I("OpenCL platform vendor: %s\n",
-//        platform.getInfo<CL_PLATFORM_VENDOR>().c_str());
-
     // Find all devices.
     platform.getDevices(CL_DEVICE_TYPE_GPU, &devices);
     if(devices.size() == 0) {
-        //LOG_E("No OpenCL devices available!");
+        LOG_E("No OpenCL devices available!\n");
         return false;
     }
 
-//    LOG_I("Found %lu OpenCL devices.\n", devices.size());
+    LOG_I("OpenCL platform name: %s\n",  platform.getInfo<CL_PLATFORM_NAME>().c_str());
+    LOG_I("OpenCL platform version: %s\n", platform.getInfo<CL_PLATFORM_VERSION>().c_str());
+    LOG_I("OpenCL platform vendor: %s\n",  platform.getInfo<CL_PLATFORM_VENDOR>().c_str());
+    LOG_I("Found %lu OpenCL devices.\n", devices.size());
 
-//    void* ptr;
-//#ifdef ENABLE_COMPRESSION
-//    clSetBufferCompressionPOCL_fn SetBufferComPOCL = nullptr;
-//    ptr = clGetExtensionFunctionAddressForPlatform(platform(), "clSetBufferCompressionPOCL");
-//    if (ptr)
-//        SetBufferComPOCL = (clSetBufferCompressionPOCL_fn)ptr;
-//#endif
-//    ptr = clGetExtensionFunctionAddressForPlatform(platform(), "clEnqueueReadBufferContentPOCL");
-//    if (ptr == NULL)
-//      throw cl::Error(CL_INVALID_PLATFORM, "platform doesn't support clEnqueueReadBufferContentPOCL");
+    void* ptr;
+#ifdef ENABLE_COMPRESSION
+    clSetBufferCompressionPOCL_fn SetBufferComPOCL = nullptr;
+    ptr = clGetExtensionFunctionAddressForPlatform(platform(), "clSetBufferCompressionPOCL");
+    if (ptr)
+        SetBufferComPOCL = (clSetBufferCompressionPOCL_fn)ptr;
+#endif
+    ptr = clGetExtensionFunctionAddressForPlatform(platform(), "clEnqueueReadBufferContentPOCL");
+    if (ptr == nullptr)
+      LOG_I("platform doesn't support clEnqueueReadBufferContentPOCL\n");
+    else
 //    enqueueReadBufferPOCL = (clEnqueueReadBufferContentPOCL_fn)ptr;
 
     // Open a context for them.
     GpuDev = devices[devID];
     GpuContext = cl::Context(GpuDev, nullptr, nullptr, nullptr, &err);
-    if (err != CL_SUCCESS)
-        return false;
+    CHECK_CL_ERROR(err, "Context creation failed\n");
     GpuQueue = cl::CommandQueue(GpuContext, GpuDev, 0, &err); // , CL_QUEUE_PROFILING_ENABLE
-    if (err != CL_SUCCESS)
-        return false;
+    CHECK_CL_ERROR(err, "CmdQueue creation failed\n");
 
     GpuProgram = cl::Program{GpuContext, SOURCE, false, &err};
-    if (err != CL_SUCCESS)
-        return false;
+    CHECK_CL_ERROR(err, "Program creation failed\n");
     err = GpuProgram.build();
-    if (err != CL_SUCCESS)
-        return false;
+    CHECK_CL_ERROR(err, "Program build failed\n");
     GpuKernel = cl::Kernel(GpuProgram, "process_frame", &err);
-    if (err != CL_SUCCESS)
-        return false;
+    CHECK_CL_ERROR(err, "Kernel creation failed\n");
 
     InputBuffer = cl::Buffer(GpuContext, CL_MEM_READ_WRITE, (cl::size_type)(InputBufferSize), nullptr, &err);
-    if (err != CL_SUCCESS)
-        return false;
-    OutputBuffer = cl::Buffer(GpuContext, CL_MEM_READ_WRITE, (cl::size_type)(sizeof(unsigned long)*64), nullptr, &err);
-    if (err != CL_SUCCESS)
-        return false;
+    CHECK_CL_ERROR(err, "Input buffer creation failed\n");
+    OutputBuffer = cl::Buffer(GpuContext, CL_MEM_READ_WRITE, OUTPUT_SIZE, nullptr, &err);
+    CHECK_CL_ERROR(err, "Output buffer creation failed\n");
 
 #ifdef ENABLE_COMPRESSION
     if (SetBufferComPOCL) {
-        int r = SetBufferComPOCL(DecodedContentBuffer(), CL_COMPRESSION_VBYTE, nullptr);
+        int r = SetBufferComPOCL(InputBuffer(), CL_COMPRESSION_VBYTE, nullptr);
         assert (r == CL_SUCCESS);
         LOG_I ("Buffer compression VBYTE enabled\n");
     }
@@ -203,24 +201,23 @@ bool OpenCL_Context::initialize(unsigned platID, unsigned devID, unsigned width,
     return true;
 }
 
-
-
-
 bool OpenCL_Context::processCameraFrame(unsigned char* input, unsigned long *output) {
     if (!isAvailable()) {
-        //LOG_E("Device not available");
+        LOG_E("Device not available");
         return false;
     }
 
-//    LOG_I("OCL: START request_next_frame_group %u\n", FgID);
-    cl_int err;
+#ifdef TIMING
+    LOG_D("OpenCL: start processCameraFrame\n");
     std::unique_lock<std::mutex> lock(OclMutex);
-//    auto start_time = std::chrono::steady_clock::now();
+    auto start_time = std::chrono::steady_clock::now();
+#endif
 
-    *output = 0;
+    cl_int err;
     err = GpuQueue.enqueueWriteBuffer(InputBuffer, CL_FALSE, 0, InputBufferSize, input);
     if (err != CL_SUCCESS)
         return false;
+    *output = 0;
     err = GpuQueue.enqueueWriteBuffer(OutputBuffer, CL_FALSE, 0, sizeof(cl_ulong), output);
     if (err != CL_SUCCESS)
         return false;
@@ -233,29 +230,23 @@ bool OpenCL_Context::processCameraFrame(unsigned char* input, unsigned long *out
     if (err != CL_SUCCESS)
         return false;
 
-//    auto end_time = std::chrono::steady_clock::now();
-//    std::chrono::duration<float> diff = end_time - start_time;
-//    float s = diff.count() * 1000.0f;
+#ifdef DUMP_FRAMES
+    char filename[1024];
+    std::snprintf(filename, 1024, "/tmp/carla_%u_%zu.raw", imgID, *output);
+    FILE* outfile = std::fopen(filename, "w");
+    std::fwrite(input, 1, InputBufferSize, outfile);
+    std::fclose(outfile);
+    ++imgID;
+#endif
 
-//    LOG_I("OCL: END request_next_frame_group %u || %03.1f ms ||", FgID, s);
+#ifdef TIMING
+    auto end_time = std::chrono::steady_clock::now();
+    std::chrono::duration<float> diff = end_time - start_time;
+    float s = diff.count() * 1000.0f;
+    LOG_D("OpenCL: end processCameraFrame: %03.1f ms\n", s);
+#endif
     return true;
 }
-
-
-/*
-int OpenCL_Context::wait_for_event(cl::Event &e, unsigned TimeoutMS)
-{
-    int status;
-    for (unsigned time = 0; time < TimeoutMS; time += 10) {
-        LOG_I("OCL: WAIT PERIOD\n");
-        std::this_thread::sleep_for(std::chrono::milliseconds(10));
-        status = e.getInfo<CL_EVENT_COMMAND_EXECUTION_STATUS>();
-        if (status <= CL_COMPLETE)
-            break;
-    }
-    return status;
-}
-*/
 
 
 void OpenCL_Context::shutdown() {

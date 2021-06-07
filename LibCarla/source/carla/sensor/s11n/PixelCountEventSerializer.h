@@ -19,7 +19,6 @@ namespace sensor {
 
 namespace s11n {
 
-  /// Serializes the current state of the whole episode.
   class PixelCountEventSerializer {
   public:
 
