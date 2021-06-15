@@ -34,11 +34,13 @@ void ASceneCaptureCameraOCL::PostPhysTick(UWorld *World, ELevelTick TickType, fl
     auto Input = Stream.PopBufferFromPool();
     Input.reset(ImageWidth * ImageHeight * 4);
 
+    FPixelReader::OpenCLPixelsInRenderThread(*this, OCLman);
+/*
     FPixelReader::GetPixelsInRenderThread(*this, Input);
-
     unsigned long Output;
     OCLman.processCameraFrame(Input.data(), &Output);
 
     Stream.Send(*this, Output);
+*/
   }
 }
