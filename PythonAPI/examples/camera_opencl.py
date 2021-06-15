@@ -31,16 +31,22 @@ def camera_callback(pxl_event):
     global vehicle_stopped
     global all_spawned
     if vehicle_stopped:
+        print("vehicle stopped")
         return
+    if not all_spawned:
+        print("not all NPC spawned")
+        return
+
     print("Red pixel count is: ", pxl_event.pixel_count)
-    if (all_spawned and pxl_event.pixel_count > 40000):
-        print("Stopping vehicle")
-        vehicle_stopped = True
-        vehicle.set_autopilot(False)
-        vehicle.set_target_velocity(carla.Vector3D(0, 0, 0))
+#    if (pxl_event.pixel_count > 40000):
+#        print("limit reached, stopping vehicle")
+#        vehicle_stopped = True
+#        vehicle.set_autopilot(False)
+#        vehicle.set_target_velocity(carla.Vector3D(0, 0, 0))
 
 def main():
     actor_list = []
+    npc_list = []
     global vehicle
     global vehicle_stopped
     global all_spawned
@@ -92,7 +98,6 @@ def main():
         print('created %s' % vehicle.type_id)
 
         # Let's put the vehicle to drive around.
-        vehicle.set_autopilot(True)
 
         # Let's add now a "depth" camera attached to the vehicle. Note that the
         # transform we give here is now relative to the vehicle.
@@ -105,23 +110,24 @@ def main():
         # Now we register the function that will be called each time the sensor
         # receives the red pixel count. If the pixel count is higher than a
         # threshold, we stop the vehicle.
-        cc = carla.ColorConverter.LogarithmicDepth
+#        cc = carla.ColorConverter.LogarithmicDepth
         camera.listen(camera_callback)
 
         # Oh wait, I don't like the location we gave to the vehicle, I'm going
         # to move it a bit forward.
-        location = vehicle.get_location()
-        location.x += 40
-        vehicle.set_location(location)
-        print('moved vehicle to %s' % location)
+#        location = vehicle.get_location()
+#        location.x += 40
+#        vehicle.set_location(location)
+#        print('moved vehicle to %s' % location)
 
         # But the city now is probably quite empty, let's add a few more
         # vehicles.
-        transform.location += carla.Location(x=40, y=-3.2)
-        transform.rotation.yaw = -180.0
-        for _ in range(0, 10):
-            transform.location.x += 8.0
+#        transform.location += carla.Location(x=40, y=-3.2)
+#        transform.rotation.yaw = -180.0
+        for _ in range(0, 40):
+#            transform.location.x += 8.0
 
+            transform = random.choice(world.get_map().get_spawn_points())
             bp = random.choice(blueprint_library.filter('vehicle'))
 
             # This time we are using try_spawn_actor. If the spot is already
@@ -129,15 +135,19 @@ def main():
             npc = world.try_spawn_actor(bp, transform)
             if npc is not None:
                 actor_list.append(npc)
-                npc.set_autopilot(True)
+                npc_list.append(npc)
                 print('created %s' % npc.type_id)
+
+        # set autopilot on all
+        vehicle.set_autopilot(True)
+        for npc in npc_list:
+            npc.set_autopilot(True)
 
         # don't enable the camera callback until all actors are spawned
         all_spawned = True
         print("running simulation")
-        time.sleep(60)
+        time.sleep(20)
         print("finished simulation")
-
 
     finally:
 
