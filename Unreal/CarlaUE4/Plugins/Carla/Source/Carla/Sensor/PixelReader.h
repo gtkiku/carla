@@ -22,6 +22,7 @@
 #include <carla/Buffer.h>
 #include <carla/BufferView.h>
 #include <carla/sensor/SensorRegistry.h>
+#include <carla/OpenCL/OpenCLcontext.h>
 #include <compiler/enable-ue4-macros.h>
 
 // =============================================================================
@@ -76,7 +77,7 @@ public:
   static void SendPixelsInRenderThread(TSensor &Sensor, bool use16BitFormat = false, std::function<TArray<TPixel>(void *, uint32)> Conversor = {});
 
   template <typename TSensor>
-  static void GetPixelsInRenderThread(TSensor &Sensor, carla::Buffer &Buffer);
+  static void OpenCLPixelsInRenderThread(TSensor &Sensor, OpenCL_Manager &OCLman);
 
 private:
 
@@ -241,7 +242,7 @@ void FPixelReader::SendPixelsInRenderThread(TSensor &Sensor, bool use16BitFormat
 }
 
 template <typename TSensor>
-void FPixelReader::GetPixelsInRenderThread(TSensor &Sensor, carla::Buffer &Buffer)
+void FPixelReader::OpenCLPixelsInRenderThread(TSensor &Sensor, OpenCL_Manager &OCLman)
 {
   check(Sensor.CaptureRenderTarget != nullptr);
 
@@ -258,16 +259,24 @@ void FPixelReader::GetPixelsInRenderThread(TSensor &Sensor, carla::Buffer &Buffe
   // game-thread.
   ENQUEUE_RENDER_COMMAND(FWritePixels_SendPixelsInRenderThread)
   (
-    [&Sensor, &Buffer](auto &InRHICmdList) mutable
+    [&Sensor, Stream=Sensor.GetDataStream(Sensor), &OCLman](auto &InRHICmdList) mutable
     {
       /// @todo Can we make sure the sensor is not going to be destroyed?
       if (!Sensor.IsPendingKill())
       {
+        auto Buffer = Stream.PopBufferFromPool();
         WritePixelsToBuffer(
             *Sensor.CaptureRenderTarget,
             Buffer,
             carla::sensor::SensorRegistry::get<TSensor *>::type::header_offset,
             InRHICmdList);
+        if(Buffer.data())
+        {
+          SCOPE_CYCLE_COUNTER(STAT_CarlaSensorStreamSend);
+          unsigned long Output;
+          OCLman.processCameraFrame(Buffer.data(), &Output);
+          Stream.Send(Sensor, Output);
+        }
       }
     }
   );
