@@ -34,15 +34,17 @@ def camera_callback(pxl_event):
         print("vehicle stopped")
         return
     if not all_spawned:
-        print("not all NPC spawned")
+#        print("not all NPC spawned")
         return
 
     print("Red pixel count is: ", pxl_event.pixel_count)
-#    if (pxl_event.pixel_count > 40000):
-#        print("limit reached, stopping vehicle")
-#        vehicle_stopped = True
-#        vehicle.set_autopilot(False)
-#        vehicle.set_target_velocity(carla.Vector3D(0, 0, 0))
+    if (pxl_event.pixel_count > 10000):
+        print("pixel limit reached, stopping vehicle")
+        vehicle_stopped = True
+        vehicle.set_autopilot(False)
+        vehicle.set_target_velocity(carla.Vector3D(0, 0, 0))
+        ctrl = carla.VehicleControl(0.0, 0.0, 1.0)
+        vehicle.apply_control(ctrl)
 
 def main():
     actor_list = []
