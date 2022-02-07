@@ -26,15 +26,13 @@ ASceneCaptureCameraOCL::ASceneCaptureCameraOCL(const FObjectInitializer &ObjectI
 
 void ASceneCaptureCameraOCL::PostPhysTick(UWorld *World, ELevelTick TickType, float DeltaSeconds)
 {
-  if(ReadyToCapture)
-  {
-    ReadyToCapture = false;
-
+/*
     auto Stream = GetDataStream(*this);
     auto Input = Stream.PopBufferFromPool();
     Input.reset(ImageWidth * ImageHeight * 4);
-
-    FPixelReader::OpenCLPixelsInRenderThread(*this, OCLman);
+*/
+    TRACE_CPUPROFILER_EVENT_SCOPE(ASceneCaptureCameraOCL::PostPhysTick);
+    FPixelReader::OpenCLPixelsInRenderThread(*this, false, OCLman);
 /*
     FPixelReader::GetPixelsInRenderThread(*this, Input);
     unsigned long Output;
@@ -42,5 +40,4 @@ void ASceneCaptureCameraOCL::PostPhysTick(UWorld *World, ELevelTick TickType, fl
 
     Stream.Send(*this, Output);
 */
-  }
 }
