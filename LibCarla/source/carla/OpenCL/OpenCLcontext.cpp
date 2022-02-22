@@ -51,13 +51,6 @@ __kernel void downsample_image(global const uchar4 *input, global uchar4* output
     size_t width = get_global_size(0);
     size_t height = get_global_size(1);
 
-/*
-    uint4 sum = input[y * width + x]
-              + input[y * width + x + 1]
-              + input[(y+1) * width + x]
-              + input[(y+1) * width + x + 1];
-    output[y * (width/2) + x] = convert_uchar4(sum / 4);
-*/
    unsigned out_idx = y + x*width;
 
    const unsigned factor = 2;
@@ -129,8 +122,6 @@ public:
           return false;
       if (GpuDev() == nullptr || FpgaDev() == nullptr)
           return false;
-//      bool avail = GpuDev.getInfo<CL_DEVICE_AVAILABLE>() != CL_FALSE;
-//      return avail;
       return true;
     }
 
