@@ -399,7 +399,7 @@ public:
   /// Blocks until the render thread has finished all it's tasks.
   void WaitForRenderThreadToFinish() {
     TRACE_CPUPROFILER_EVENT_SCOPE(ASceneCaptureSensor::WaitForRenderThreadToFinish);
-    // FlushRenderingCommands();
+    FlushRenderingCommands();
   }
 
   struct

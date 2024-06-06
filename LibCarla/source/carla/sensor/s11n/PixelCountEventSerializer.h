@@ -21,25 +21,23 @@ namespace s11n {
 
   class PixelCountEventSerializer {
   public:
-
     struct Data {
-
       uint64_t pixel_count;
-
-      MSGPACK_DEFINE_ARRAY(pixel_count)
     };
 
     constexpr static auto header_offset = 0u;
 
     static Data DeserializeRawData(const RawData &message) {
-      return MsgPack::UnPack<Data>(message.begin(), message.size());
+      return Data{*reinterpret_cast<const uint64_t *>(message.begin())};
     }
 
     template <typename SensorT>
     static Buffer Serialize(
         const SensorT &,
         uint64_t pixel_count) {
-      return MsgPack::Pack(Data{pixel_count});
+      Buffer buf;
+      buf.copy_from(reinterpret_cast<const unsigned char *>(&pixel_count), sizeof(pixel_count));
+      return buf;
     }
 
     static SharedPtr<SensorData> Deserialize(RawData &&data);

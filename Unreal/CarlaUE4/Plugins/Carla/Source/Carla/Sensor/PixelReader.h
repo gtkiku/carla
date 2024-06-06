@@ -254,34 +254,40 @@ void FPixelReader::OpenCLPixelsInRenderThread(TSensor &Sensor, bool use16BitForm
   /// Blocks until the render thread has finished all it's tasks.
   Sensor.EnqueueRenderSceneImmediate();
 
+  auto ProcessFunc = [&OCLman, &Sensor](void *LockedData, uint32 Size, uint32 Offset, uint32 ExpectedRowBytes)
+  {
+    unsigned long Output;
+    OCLman.processCameraFrame((unsigned char *)LockedData, &Output);
+
+    std::cout << "Output = " << Output << std::endl;
+
+    auto Stream = Sensor.GetDataStream(Sensor);
+    auto Buffer = Stream.PopBufferFromPool();
+    Buffer.copy_from((const carla::Buffer::value_type *)&Output, sizeof(Output));
+    auto BufView = carla::BufferView::CreateFrom(std::move(Buffer));
+
+    Stream.Send(Sensor, BufView);
+  };
+
   // Enqueue a command in the render-thread that will write the image buffer to
   // the data stream. The stream is created in the capture thus executed in the
   // game-thread.
   ENQUEUE_RENDER_COMMAND(FWritePixels_SendPixelsInRenderThread)
   (
-    [&Sensor, Stream=Sensor.GetDataStream(Sensor), use16BitFormat, &OCLman](auto &InRHICmdList) mutable
+    [&Sensor, ProcessFunc](auto &InRHICmdList) mutable
     {
       /// @todo Can we make sure the sensor is not going to be destroyed?
       if (!Sensor.IsPendingKill())
       {
-        auto Buffer = Stream.PopBufferFromPool();
         WritePixelsToBuffer(
             *Sensor.CaptureRenderTarget,
-            Buffer,
             carla::sensor::SensorRegistry::get<TSensor *>::type::header_offset,
-            InRHICmdList, use16BitFormat);
-        if(Buffer.data())
-        {
-          SCOPE_CYCLE_COUNTER(STAT_CarlaSensorStreamSend);
-          TRACE_CPUPROFILER_EVENT_SCOPE_STR("OpenCL Send");
-          unsigned long Output;
-          OCLman.processCameraFrame(Buffer.data(), &Output);
-          Stream.Send(Sensor, Output);
-        }
+            InRHICmdList,
+            ProcessFunc);
       }
     }
   );
 
   // Blocks until the render thread has finished all it's tasks
-  Sensor.WaitForRenderThreadToFinsih();
+  Sensor.WaitForRenderThreadToFinish();
 }
