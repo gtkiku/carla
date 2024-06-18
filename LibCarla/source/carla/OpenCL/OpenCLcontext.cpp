@@ -24,10 +24,6 @@
 #endif
 
 static const char *PX_COUNT_SOURCE = R"(
-
-#pragma OPENCL EXTENSION cl_khr_int64_base_atomics : enable
-#pragma OPENCL EXTENSION cl_khr_int64_extended_atomics : enable
-
 __kernel void count_red_pixels(global const uchar4 *input, global ulong* output) {
     size_t x = get_global_id(0);
     size_t y = get_global_id(1);
@@ -35,23 +31,20 @@ __kernel void count_red_pixels(global const uchar4 *input, global ulong* output)
     size_t height = get_global_size(1);
 
     uchar4 px = input[y * width + x];
-    if (px.x > 100)
-        atom_add(output, 1);
+    if (px.x > 100) {
+        *output += 1;
+    }
 }
 )";
 
 static const char *DOWNSAMPLE_SOURCE = R"(
-
-#pragma OPENCL EXTENSION cl_khr_int64_base_atomics : enable
-#pragma OPENCL EXTENSION cl_khr_int64_extended_atomics : enable
-
 __kernel void downsample_image(global const uchar4 *input, global uchar4* output) {
     size_t x = get_global_id(0);
     size_t y = get_global_id(1);
     size_t width = get_global_size(0);
     size_t height = get_global_size(1);
 
-   unsigned out_idx = y + x*width;
+   unsigned out_idx = y * width + x;
 
    const unsigned factor = 2;
    width *= factor;
