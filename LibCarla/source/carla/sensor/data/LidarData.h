@@ -12,6 +12,8 @@
 #include <cstdint>
 #include <vector>
 
+class ARayCastLidarOCL;
+
 namespace carla {
 
 namespace ros2 {
@@ -112,7 +114,9 @@ namespace data {
 
     friend class s11n::LidarSerializer;
     friend class s11n::LidarHeaderView;
+
     friend class carla::ros2::ROS2;
+    friend class ::ARayCastLidarOCL;
   };
 
 } // namespace s11n

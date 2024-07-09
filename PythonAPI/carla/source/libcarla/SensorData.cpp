@@ -21,6 +21,7 @@
 #include <carla/sensor/data/RadarMeasurement.h>
 #include <carla/sensor/data/DVSEventArray.h>
 #include <carla/sensor/data/PixelCountEvent.h>
+#include <carla/sensor/data/GridmapEvent.h>
 #include <carla/sensor/data/RadarData.h>
 
 #include <boost/python/suite/indexing/vector_indexing_suite.hpp>
@@ -105,6 +106,15 @@ namespace data {
     out << "PixelCountEvent(frame=" << std::to_string(event.GetFrame())
         << ", timestamp=" << std::to_string(event.GetTimestamp())
         << ", pixel_count=" << std::to_string(event.GetPixelCount())
+        << ')';
+    return out;
+  }
+
+  std::ostream &operator<<(std::ostream &out, const GridmapEvent &event) {
+    out << "GridmapEvent(frame=" << std::to_string(event.GetFrame())
+        << ", timestamp=" << std::to_string(event.GetTimestamp())
+        << ", width=" << std::to_string(event.GetWidth())
+        << ", height=" << std::to_string(event.GetHeight())
         << ')';
     return out;
   }
@@ -194,6 +204,14 @@ static auto GetRawDataAsBuffer(T &self) {
 #else
   auto *ptr = PyBuffer_FromMemory(data, size);
 #endif
+  return boost::python::object(boost::python::handle<>(ptr));
+}
+
+template <typename T>
+static auto GetRawDataAsCapsule(T &self) {
+  auto *data = reinterpret_cast<unsigned char *>(self.data());
+  //auto size = static_cast<Py_ssize_t>(sizeof(typename T::value_type) * self.size());
+  auto *ptr = PyCapsule_New(reinterpret_cast<char *>(data), NULL, NULL);
   return boost::python::object(boost::python::handle<>(ptr));
 }
 
@@ -511,6 +529,17 @@ void export_sensor_data() {
 
   class_<csd::PixelCountEvent, bases<cs::SensorData>, boost::noncopyable, boost::shared_ptr<csd::PixelCountEvent>>("PixelCountEvent", no_init)
     .add_property("pixel_count", &csd::PixelCountEvent::GetPixelCount)
+    .def(self_ns::str(self_ns::self))
+  ;
+
+  class_<csd::GridmapEvent, bases<cs::SensorData>, boost::noncopyable, boost::shared_ptr<csd::GridmapEvent>>("GridmapEvent", no_init)
+    .add_property("width", &csd::GridmapEvent::GetWidth)
+    .add_property("height", &csd::GridmapEvent::GetHeight)
+    .add_property("size", &csd::GridmapEvent::GetSize)
+    .add_property("raw_data", &GetRawDataAsBuffer<csd::GridmapEvent>)
+    .def("__getitem__", +[](const csd::GridmapEvent &self, size_t pos) -> float {
+      return self.at(pos);
+    })
     .def(self_ns::str(self_ns::self))
   ;
 

@@ -30,6 +30,7 @@
 #include "carla/sensor/s11n/GBufferUint8Serializer.h"
 #include "carla/sensor/s11n/GBufferFloatSerializer.h"
 #include "carla/sensor/s11n/PixelCountEventSerializer.h"
+#include "carla/sensor/s11n/GridmapEventSerializer.h"
 
 // 2. Add a forward-declaration of the sensor here.
 class ACollisionSensor;
@@ -44,6 +45,7 @@ class AOpticalFlowCamera;
 class ARadar;
 class ARayCastSemanticLidar;
 class ARayCastLidar;
+class ARayCastLidarOCL;
 class ASceneCaptureCamera;
 class ASceneCaptureCameraOCL;
 class ASemanticSegmentationCamera;
@@ -77,6 +79,7 @@ namespace sensor {
     std::pair<ARadar *, s11n::RadarSerializer>,
     std::pair<ARayCastSemanticLidar *, s11n::SemanticLidarSerializer>,
     std::pair<ARayCastLidar *, s11n::LidarSerializer>,
+    std::pair<ARayCastLidarOCL *, s11n::GridmapEventSerializer>,
     std::pair<ARssSensor *, s11n::NoopSerializer>,
     std::pair<ASceneCaptureCamera *, s11n::ImageSerializer>,
     std::pair<ASceneCaptureCameraOCL *, s11n::PixelCountEventSerializer>,
@@ -106,6 +109,7 @@ namespace sensor {
 #include "Carla/Sensor/OpticalFlowCamera.h"
 #include "Carla/Sensor/Radar.h"
 #include "Carla/Sensor/RayCastLidar.h"
+#include "Carla/Sensor/RayCastLidarOCL.h"
 #include "Carla/Sensor/RayCastSemanticLidar.h"
 #include "Carla/Sensor/RssSensor.h"
 #include "Carla/Sensor/SceneCaptureCamera.h"
