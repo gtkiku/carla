@@ -61,7 +61,7 @@ QUOTE(POINTDEF())
 #define PROB_FREE log(0.35f/0.45f)
 
 #define map_at(map, xw, yw, i, j)\
-        map[i * xw + j]
+        map[i * yw + j]
 
 float occupied_with_intensity(float intensity) {
     return log(intensity / (1.0f - intensity));
