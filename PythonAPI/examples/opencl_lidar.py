@@ -83,7 +83,7 @@ def main(arg):
 
         blueprint_library = world.get_blueprint_library()
         vehicle_bp = blueprint_library.filter(arg.filter)[0]
-        vehicle_transform = world.get_map().get_spawn_points()[0]
+        vehicle_transform = world.get_map().get_spawn_points()[120]
         vehicle = world.spawn_actor(vehicle_bp, vehicle_transform)
         vehicle.set_autopilot(arg.no_autopilot)
 
